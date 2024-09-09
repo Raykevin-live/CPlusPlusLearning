@@ -1,19 +1,20 @@
 #pragma once
 
 #include <iostream>
+#include <cassert>
 
 using namespace std;
 
 class Date
 {
+	//全局+友元函数声明（只是一个声明，在公有或者私有都可以）
+	//连续输出流时会出问题，所以返回流
+	friend ostream& operator <<(ostream& out, const Date& d);
+	friend istream& operator >>(istream& in, Date& d);
 public:
 	//构造函数
-	Date(int year = 1, int month = 1, int day = 1)
-	{
-		_year = year;
-		_month = month;
-		_day = day;
-	}
+	Date(int year = 1, int month = 1, int day = 1);
+	
 	//拷贝构造函数
 	Date(const Date& x)
 	{
@@ -22,12 +23,14 @@ public:
 		_day = x._day;
 	}
 	//打印
-	void Print()
+	void Print() const // 加到这里修饰this* 权限可以缩小，这样const对象和普通对象都可以打印
 	{
 		cout << _year << "-" << _month << "-" << _day << endl;
 	}
+
 	//赋值运算符重载，作为成员函数，第一个参数为隐藏的this
-	bool operator<(const Date& x2)
+	// 这里之前没有const的时候，this是普通参数，而x2是const参数，所以反过来比的时候就会出问题
+	bool operator<(const Date& x2) const 
 	{
 		if (_year < x2._year)
 		{
@@ -72,7 +75,7 @@ public:
 
 	//d1+day
 	Date& operator+=(int day);
-	Date operator+(int day);
+	Date operator+(int day) const;
 
 	//前置++与后置++
 	//单目运算符
@@ -82,7 +85,7 @@ public:
 
 	//d1-day
 	Date& operator-=(int day);
-	Date operator-(int day);
+	Date operator-(int day) const;
 
 	//前置--与后置--
 	//单目运算符
@@ -92,8 +95,23 @@ public:
 
 	//Date1 - Date2
 	int operator -(const Date& d);
+	//Date1 + Date2 没有用的不用重载
+	// 
+	//流插入
+	//cout<< d1 右边的对象流向左边
+	//问题：d1 必须写在左操作数，因为Date对象默认的占用第一个参数，就是左操作数
+	//写出来就是下面这样不符合使用习惯
+	//解决方法： 写到全局
+	//void operator <<(ostream& out);
+
 private:
-	int _year;
-	int _month;
-	int _day;
+	int _year = 1;
+	int _month = 1;
+	int _day = 1;
 };
+
+//无法访问内部对象，使用友元函数
+//流插入
+ ostream& operator <<(ostream& out, const Date& d);
+ //流提取
+ istream& operator >>(istream& in, Date& d);

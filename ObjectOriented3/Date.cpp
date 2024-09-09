@@ -1,6 +1,21 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 #include "Date.h"
 
+Date::Date(int year, int month, int day)
+{
+	if (month > 0 && month < 13 && day >0 && day <= GetMonthDay(year, month))
+	{
+		_year = year;
+		_month = month;
+		_day = day;
+	}
+	else
+	{
+		printf("非法日期\n");
+		assert(false);
+	}
+}
+
 bool Date::operator ==(const Date& x)
 {
 	return _year == x._year &&
@@ -62,7 +77,7 @@ Date& Date::operator+=(int day)
 }
 
 //创建临时变量少，效率高
-Date Date::operator+(int day)
+Date Date::operator+(int day) const
 {
 	//拷贝构造
 	Date tmp(*this);
@@ -157,7 +172,7 @@ Date& Date::operator-=(int day)
 	return *this;
 }
 
-Date Date::operator-(int day)
+Date Date::operator-(int day) const
 {
 	Date tmp = *this;
 
@@ -198,4 +213,34 @@ int Date::operator -(const Date& d)
 	}
 
 	return n * flag;
+}
+
+//void Date::operator <<(ostream& out)
+//{
+//	cout << _year << "年" << _month << "月" << _day << "日" << endl;
+//}
+
+ostream& operator <<(ostream& out, const Date& d)
+{
+	cout << d._year << "年" << d._month << "月" << d._day << "日" << endl;
+	return out;
+}
+
+istream& operator >>(istream& in, Date& d)
+{
+	int year, month, day;
+	in >> year >> month >> day;
+	if (month > 0 && month < 13 && day >0 && day <= d.GetMonthDay(year, month))
+	{
+		d._year = year;
+		d._month = month;
+		d._day = day;
+
+	}
+	else
+	{
+		printf("非法日期\n");
+		assert(false);
+	}
+	return in;
 }

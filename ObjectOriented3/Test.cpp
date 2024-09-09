@@ -186,9 +186,21 @@ void TestDate6()
 	cout << ret << endl;
 }
 
+void TestDate7()
+{
+	Date d1(2023, 1, 1);
+	Date d2(2024, 1, 1);
+	Date d3(2025, 1, 1);
+	
+	//Á÷ £º´Ó×óÍùÓÒÁ÷
+	//cout << d1 << d2 << d3;
+	cin >> d2;
+	cout << d2;
+}
+
 int main()
 {
-	TestDate6();
+	TestDate7();
 
 	return 0;
 }
