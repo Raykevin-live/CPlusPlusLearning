@@ -1,5 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 
+#include <iostream>
+using namespace std;
+
 //class A 
 //{
 //public:
@@ -73,36 +76,79 @@
 //创建一个类，只能在栈上创建对象
 //创建一个类，只能在堆上创建对象
 
+//class A
+//{
+//public:
+//	static A GetStackObj()
+//	{
+//		A aa;
+//		return aa;
+//	}
+//
+//	static A* GetHeapObj()
+//	{
+//		return new A;// new 返回指针
+//	}
+//private:
+//	A()
+//	{};
+//private:
+//	int _a = 1;
+//	int _b = 2;
+//};
+//
+//int main()
+//{
+//	//static A aa1;//静态区
+//	//A aa2;	//栈
+//	//A* ptr = new A;	// 堆
+//
+//	//这里会有先有鸡还是先有蛋的问题，通过这个函数去创建对象，但是需要有对象才可以调用函数
+//	//解决方法 使用static，static不用this指针
+//	A::GetStackObj();
+//
+//	return 0;
+//}
+
+
+//匿名对象
 class A
 {
 public:
-	static A GetStackObj()
+	A(int a = 0)
+		:_a(a)
 	{
-		A aa;
-		return aa;
+		cout << "A(int a)" << endl;
 	}
+private:
+	int _a;
+};
 
-	static A* GetHeapObj()
+class Solution
+{
+public:
+	Solution()
+	{}
+public:
+	int Sum_Solution(int n)
 	{
-		return new A;// new 返回指针
+		cout << "Sum_Solution" << endl;
+		return n;
 	}
-private:
-	A()
-	{};
-private:
-	int _a = 1;
-	int _b = 2;
 };
 
 int main()
 {
-	//static A aa1;//静态区
-	//A aa2;	//栈
-	//A* ptr = new A;	// 堆
+	A aa(1); // 有名对象 -- 声明周期在当前函数局部域
+	A(2);    //匿名对象 -- 生命周期在当前行
 
-	//这里会有先有鸡还是先有蛋的问题，通过这个函数去创建对象，但是需要有对象才可以调用函数
-	//解决方法 使用static，static不用this指针
-	A::GetStackObj();
+	Solution s1;
+	s1.Sum_Solution(10);
+
+	Solution().Sum_Solution(20); // 匿名函数
+
+	//A& ra = A(1); //匿名对象具有常性
+	const A& ra = A(1); //const 引用延长匿名对象的生命周期，生命周期在当前函数局部域
 
 	return 0;
 }
