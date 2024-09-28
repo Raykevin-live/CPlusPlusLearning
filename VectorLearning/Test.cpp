@@ -303,11 +303,57 @@ void test_Myvector4()
 	Print(v1);
 }
 
+
+void test_Myvector5()
+{
+	ling::vector<string> v1;
+
+	v1.push_back("11111111");// 这里单变量的构造函数有隐式类型转化，使用方便，也可以string("11111")
+	v1.push_back("22222222");
+	v1.push_back("33333333");
+	v1.push_back("44444444");
+	v1.push_back("555555555");
+	v1.push_back("6666666666");
+	v1.push_back("7777777777");
+
+
+	//v1.pop_back();
+	for (auto e : v1)
+	{
+		cout << e << " ";
+	}
+	cout << endl;
+}
+
+void test_Myvector6()
+{
+	ling::vector<int> v1(10, 1);
+
+	
+	for (auto e : v1)
+	{
+		cout << e << " ";
+	}
+	cout << endl;
+}
+
+void test_Myvector7()
+{
+	int a[] = { 16, 2, 77, 29 };
+
+	ling::vector<int> v1(a, a+4);
+	for (auto e : v1)
+	{
+		cout << e << " ";
+	}
+	cout << endl;
+}
+
 int main()
 {
 	//test_vector5();
 
-	test_Myvector3();
+	test_Myvector7();
 
 	return 0;
 }

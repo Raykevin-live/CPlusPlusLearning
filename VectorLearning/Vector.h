@@ -12,6 +12,65 @@ namespace ling
 		typedef T* iterator;
 		typedef const T* const_iterator;
 
+
+		vector()
+			//:_start(nullptr)
+			//, _finish(nullptr)
+			//, _endofstorage(nullptr)
+		{}
+
+		//拷贝构造
+		vector(const vector<T>& v)
+			//:_start(nullptr)
+			//, _finish(nullptr)
+			//, _endofstorage(nullptr)
+		{
+			_start = new T(v.capacity());
+			memcpy(_start, v._start, sizeof(T)*v.size());
+			_finish = _start + v.size();
+			_endofstorage = _start + v.capacity();
+
+		}
+
+		vector(size_t n, const T& val = T())
+			//:_start(nullptr)
+			//, _finish(nullptr)
+			//, _endofstorage(nullptr)
+		{
+			resize(n, val);
+		}
+		
+		//模板匹配原则，防止匹配错误
+		vector(int n, const T& val = T())
+		{
+			resize(n, val);
+		}
+
+		//[first, last) 迭代器默认是这样的方便使用
+		template<typename InputIterator>//模板套模板
+		vector(InputIterator first, InputIterator last)
+		{
+			while (first != last)
+			{
+				push_back(*first);
+				++first;
+			}
+		}
+		
+		void swap(vector<T>& v)
+		{
+			std::swap(_start, v._start);
+			std::swap(_finish, v._finish);
+			std::swap(_endofstorage, v._endofstorage);
+		}
+		//深拷贝
+		vector<T>& operator=(vector<T> v) const 
+		{
+			swap(v);
+
+			return *this;
+		}
+
 		iterator begin()
 		{
 			return _start;
@@ -32,11 +91,7 @@ namespace ling
 			return _finish;
 		}
 
-		vector()
-			:_start(nullptr)
-			,_finish(nullptr)
-			,_endofstorage(nullptr)
-		{}
+		
 
 		void reserve(size_t n)
 		{
@@ -46,7 +101,13 @@ namespace ling
 				T* tmp = new T[n];
 				if (_start)
 				{
-					memcpy(tmp, _start, sizeof(T) * old_size);
+					// 使用浅拷贝会出问题
+					//memcpy(tmp, _start, sizeof(T) * old_size);
+					for (size_t i = 0; i < old_size; i++)
+					{
+						tmp[i] = _start[i];//调用深拷贝 赋值重载 '=' 
+					}
+
 					delete[] _start;
 				}
 
@@ -69,7 +130,7 @@ namespace ling
 				while (_finish != _start + n)
 				{
 					//填值
-					_finish = val;
+					*_finish = val;
 					++_finish;
 				}
 			}
@@ -86,12 +147,14 @@ namespace ling
 
 			*_finish = x;
 			++_finish;*/
-			insert( end(), x);
+			auto it = end();
+			insert( it, x);
 		}
 
 		void pop_back()
 		{
-			erase( --end());
+			 auto it = end();
+			 erase(--it);
 		}
 
 		size_t capacity() const
@@ -145,7 +208,7 @@ namespace ling
 			return pos;
 		}
 
-		iterator erase(iterator pos)
+		iterator erase(const iterator& pos)
 		{
 			assert(pos >= _start && pos <= _finish);
 			
@@ -169,7 +232,7 @@ namespace ling
 			}
 		}
 	private:
-		iterator _start = nullptr;
+		iterator _start = nullptr; // 给初始缺省值，方便后面初始化
 		iterator _finish = nullptr;
 		iterator _endofstorage = nullptr;
 	};
