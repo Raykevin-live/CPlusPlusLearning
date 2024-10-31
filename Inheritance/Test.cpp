@@ -1,0 +1,122 @@
+#define _CRT_SECURE_NO_WARNINGS 1
+
+#include <iostream>
+
+using namespace std;
+
+class Person
+{
+	//父类的私有成员，子类用不了
+private:
+	
+public:
+	Person(const char* name ="Perter")
+		:_name(name)
+	{
+		cout << "Person()" << endl;
+	}
+
+	Person(const Person& p)
+		:_name(p._name)
+	{
+		cout << "Person(const Perter& p)" << endl;
+	}
+
+	Person& operator=(const Person& p)
+	{
+		cout << "Person& operator=(const Person& p)" << endl;
+		if (this != &p)
+		{
+			_name = p._name;
+			_age = p._age;
+		}
+		return *this;
+	}
+
+	void Print()
+	{
+		cout << "name:" << _name << endl;
+		cout << "age:" << _age << endl;
+	}
+
+	~Person()
+	{
+		cout << "~Person()" << endl;
+	}
+protected:
+	string _name;
+	int _age;
+};
+
+class Student : public Person
+{
+public:
+	Student(const char* name = "张三", int stuid = 0)
+		:_stuid(stuid)
+		, Person(name)
+	{}
+
+	Student(const Student& s)
+		:Person(s) //这里按理说是要传父类的变量，但是父类对象没法传进来，可以直接传子类对象，
+		//因为子类对象，可以被父类对象隐式类型转换
+		,_stuid(s._stuid)
+	{}
+
+	Student& operator=(const Student& s)
+	{
+		cout << "Student& operator=(const Student& s)" << endl;
+		if (this != &s)
+		{
+			Person::operator=(s);//赋值操作符重载可以指定父类作用域来达到目的
+			_stuid = s._stuid;
+		}
+		return *this;
+	}
+	~Student()
+	{
+		//由于后面多态的原因，析构函数的函数名被特殊处理了
+		//统一处理成destrucot
+		
+		//显式调用父类析构函数，无法保证先子后父
+		//所以子类析构函数完成就自动调用父类，这样就保证了先子后父
+		//Person::~Person();
+	}
+protected:
+	int _stuid;
+};
+
+class Teacher : public Person
+{
+protected:
+	int _jobid;
+};
+
+//继承
+//int main()
+//{
+//	Person p;
+//	Student s;
+//	Teacher t;
+//	s.Print();
+//	t.Print();
+//	//子赋给父是可以的
+//	p = s;
+//
+//	int i = 0;
+//	//double& d = i; // 不可以因为临时变量具有常性
+//	const double& d = i;
+//
+//	//赋值兼容(切割\切片）
+//	Person p1 = s;
+//	Person& rp = s;//引用不产生临时变量，只是切出来部分的别名
+//
+//	return 0;
+//}
+
+// 派生类初始化列表
+int main()
+{
+	Student s;
+
+	return 0;
+}
