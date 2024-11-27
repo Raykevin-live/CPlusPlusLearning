@@ -175,7 +175,8 @@ public:
 class Person
 {
 public:
-	~Person()
+	virtual void BuyTicket() { cout << "买票-全价" << endl; }
+	virtual ~Person()
 	{
 		cout << "~Person()" << endl;
 	}
@@ -184,13 +185,16 @@ public:
 class Student : public Person
 {
 public:
+	virtual void BuyTicket() { cout << "买票-半价" << endl; }
+
 	~Student() { cout << "~Student()" << endl; }
 };
 
+//析构函数可以是虚函数吗？为什么？
 // 析构函数加vritual, 是不是函数重写？
 // 是，因为类析构函数都是被处理成destrctor这个统一的名字
 // 为什么要这么处理呢？因为要让他们构成重写
-// 拿为什么要让他们构成重写呢？
+// 那为什么要让他们构成重写呢？
 //int main()
 //{
 //	Person p;
@@ -201,13 +205,39 @@ public:
 
 //下面的场景：
 //会造成内存泄露，没有调用派生类的析构函数
-int main()
-{
-	Person* p = new Person;
-	delete p;
+//int main()
+//{
+//	Person* p = new Person;
+//	p->BuyTicket();
+//	delete p;
+//
+//	p = new Student;
+//	p->BuyTicket();
+//	delete p;// p->destructor()+operator delete(p)
+//	// 这里我们期望p->destructor()是一个多态调用（防止内存泄漏），而不是普通调用
+//
+//	return 0;
+//} 
 
-	p = new Student;
-	delete p;
+//final 不可以重写虚函数
+//派生类不加 vritual也是重写，因为可以省略
+//class Car
+//{
+//public:
+//	virtual void Drive() final {}
+//};
+//class Benz :public Car
+//{
+//public:
+//	void Drive() { cout << "Benz-舒适" << endl; }
+//};
 
-	return 0;
-}
+//override 检查派生类是否重写了虚函数(没有会报错）
+class Car {
+public:
+	virtual void Drive() {}
+};
+class Benz :public Car {
+public:
+	virtual void Drive() override { cout << "Benz-舒适" << endl; }
+};
