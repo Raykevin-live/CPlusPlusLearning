@@ -68,8 +68,8 @@ void TestBSTree4()
 	}
 	t.InOrder();
 
-	BSTree<int> t1(t);
-	//t1 =  t;
+	BSTree<int> t1;
+	t1 =  t;
 	t1.InOrder();
 }
 int main()

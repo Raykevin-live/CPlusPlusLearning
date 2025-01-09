@@ -22,7 +22,7 @@ public:
 	BSTree()
 		:_root(nullptr)
 	{}
-	BSTree(const BSTreeNode<K>& t)
+	BSTree(const BSTree<K>& t)
 	{
 		_root = Copy(t._root);
 	}
@@ -192,7 +192,7 @@ public:
 		return _EraseR(_root, key);
 	}
 private:
-	Node* Copy(Node*& root)
+	Node* Copy(const Node* root)
 	{
 		if (root == nullptr)
 			return nullptr;
