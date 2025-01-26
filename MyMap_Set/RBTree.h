@@ -30,21 +30,26 @@ struct RBTreeNode
 	{}
 };
 
-template<class T>
+template<class T, class Ptr, class Ref>
 struct __TreeIterator {
 	typedef RBTreeNode<T> Node;
 public:
-	typedef __TreeIterator<T> Self;
+	typedef __TreeIterator<T, Ptr, Ref> Self;
+	typedef __TreeIterator<T, T*, T&> Iterator;
 	Node* _node;
 
 	__TreeIterator(Node* node)
 		:_node(node)
 	{}
 
-	T& operator*() {
+	__TreeIterator(const Iterator& it)
+		:_node(it._node)
+	{}
+
+	Ref operator*() {
 		return _node->_data;
 	}
-	T* operator->() {
+	Ptr operator->() {
 		return &_node->_data;
 	}
 	bool operator!=(const Self& s) {
@@ -63,14 +68,29 @@ public:
 			Node* cur = _node;
 			Node* parent = cur->_parent;
 			// 找父亲是左的那个祖先节点，就是下一个要访问的节点
-			while (parent) {
-				if (cur==parent->_left) {
-					break;
-				}
-				else {
-					cur = parent;
-					parent = parent->_parent;
-				}
+			while (parent && cur == parent->_right) {
+				cur = parent;
+				parent = parent->_parent;
+			}
+			_node = parent;
+		}
+		return *this;
+	}
+	// 右 根 左
+	Self& operator--() {
+		if (_node->_left) {
+			Node* subRight = _node->_left;
+			while (subRight->right) {
+				subRight = subRight->_right;
+			}
+			_node = subRight;
+		}
+		else {
+			Node* cur = _node;
+			Node* parent = cur->_parent;
+			while (parent && cur == parent->_left) {
+				cur = cur->_parent;
+				parent = parent->_parent;
 			}
 			_node = parent;
 		}
@@ -78,12 +98,15 @@ public:
 	}
 };
 
+
 template<class K, class T, class KeyOfT>
 class RBTree
 {
 	typedef RBTreeNode<T> Node;
 public:
-	typedef __TreeIterator<T> iterator;
+	// 同一个类模板，传的不同的参数实例化出不同的类型
+	typedef __TreeIterator<T, T*, T&> iterator;
+	typedef __TreeIterator<T, const T*, const T&> const_iterator;
 
 	iterator begin() {
 		Node* leftMin = _root;
@@ -96,13 +119,26 @@ public:
 	iterator end() {
 		return iterator(nullptr);
 	}
-	bool Insert(const T& data )
+
+	const_iterator begin() const{
+		Node* leftMin = _root;
+		while (leftMin && leftMin->_left) {
+			leftMin = leftMin->_left;
+		}
+		return const_iterator(leftMin);
+	}
+
+	const_iterator end() const{
+		return const_iterator(nullptr);
+	}
+
+	pair<iterator, bool> Insert(const T& data )
 	{
 		if (_root == nullptr)
 		{
 			_root = new Node(data);
 			_root->_col = BLACK;
-			return true;
+			return make_pair(iterator(_root), true);
 		}
 
 		Node* cur = _root;
@@ -123,13 +159,15 @@ public:
 			}
 			else
 			{
-				return false;
+				return make_pair(iterator(cur), false);
 			}
 		}
 
 		// 插入
 		cur = new Node(data);
 		cur->_col = RED;
+
+		Node* newnode = cur;
 		//KeyOfT kot;
 		if (kot(parent->_data) < kot(data))
 		{
@@ -208,7 +246,7 @@ public:
 		}
 
 		_root->_col = BLACK;
-		return true;
+		return make_pair(iterator(newnode), true);
 	}
 	Node* Find(const K& key) {
 		Node* cur = _root;
