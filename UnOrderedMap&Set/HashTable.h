@@ -135,19 +135,26 @@ namespace hash_bucket {
 	// 前置声明
 	template<class K, class T, class KeyOfT, class HashFunc>
 	class HashTable;
-
-	template<class K, class T, class KeyOfT, class HashFunc>
+	//迭代器
+	template<class K, class T, class Ptr, class Ref, class KeyOfT,  class HashFunc>
 	struct HTIterator {
 		typedef HashNode<T> Node;
-		typedef HTIterator<K, T, KeyOfT, HashFunc> Self;
+		typedef HTIterator<K, T, Ptr, Ref, KeyOfT, HashFunc> Self;
+		typedef HTIterator<K, T, T*, T&, KeyOfT, HashFunc> Iterator;
 
 		Node* _node;
-		HashTable<K, T, KeyOfT, HashFunc>* _pht;
-
+		const HashTable<K, T, KeyOfT, HashFunc>* _pht;
+		//使用const解决权限放大问题
 	public:
-		HTIterator( Node* node, HashTable<K, T, KeyOfT, HashFunc>* pht)
+		HTIterator( Node* node, const HashTable<K, T, KeyOfT, HashFunc>* pht)
 			:_node(node) 
 			,_pht(pht)
+		{}
+
+		// 普通迭代器时， 他是拷贝构造； const迭代器时他是const迭代器的构造
+		HTIterator(const Iterator& it)
+			:_node(it._node)
+			, _pht(it._pht)
 		{}
 
 		Self& operator++() {
@@ -177,17 +184,20 @@ namespace hash_bucket {
 			return *this;
 		}
 
-		T& operator*() {
+		Ref operator*() {
 			return _node->_data;
 		}
 
-		T* operator->()
+		Ptr operator->()
 		{
 			return &_node->_data;
 		}
 
 		bool operator!=(const Self& s) {
 			return _node != s._node;
+		}
+		bool operator==(const Self& s) {
+			return _node == s._node;
 		}
 	};
 
@@ -217,10 +227,13 @@ namespace hash_bucket {
 	class HashTable {
 		typedef HashNode<T> Node;
 		//友元声明
-		template<class K, class T, class KeyOfT, class HashFunc>
+		template<class K, class T, class Ptr, class Ref, class KeyOfT, class HashFunc>
 		friend struct HTIterator;
 	public:
-		typedef HTIterator<K, T, KeyOfT, HashFunc> iterator;
+		typedef HTIterator<K, T, T*, T&, KeyOfT, HashFunc> iterator;
+		typedef HTIterator<K, T, const T*, const T&, KeyOfT, HashFunc> const_iterator;
+
+
 		iterator begin() {
 			//找第一个桶
 			for (size_t i = 0; i < _table.size(); i++) {
@@ -234,6 +247,21 @@ namespace hash_bucket {
 
 		iterator end() {
 			return iterator(nullptr, this);
+		}
+
+		const_iterator begin() const{
+			//找第一个桶
+			for (size_t i = 0; i < _table.size(); i++) {
+				Node* cur = _table[i];
+				if (cur) {
+					return const_iterator(cur, this);
+				}
+			}
+			return const_iterator(nullptr, this);
+		}
+
+		const_iterator end() const{
+			return const_iterator(nullptr, this);
 		}
 	public:
 		HashTable() {
@@ -263,10 +291,11 @@ namespace hash_bucket {
 				_table[i] = nullptr;
 			}
 		}
-		bool Insert(const T& data) {
+		pair<iterator, bool> Insert(const T& data) {
 			KeyOfT kot;
-			if (Find(kot(data))){
-				return false;
+			iterator it = Find(kot(data));
+			if (it != end()){
+				return make_pair(it, false);
 			}
 			HashFunc hf;
 			// 负载因子到1 就开始扩容
@@ -300,21 +329,21 @@ namespace hash_bucket {
 			newnode->_next = _table[hashi];
 			_table[hashi] = newnode;
 			++_n;
-			return true;
+			return make_pair(iterator(newnode, this), true);
 		}
 
-		Node* Find(const K& key) {
+		iterator Find(const K& key) {
 			HashFunc hf;
 			KeyOfT kot;
 			size_t hashi = hf(key) % _table.size();
 			Node* cur = _table[hashi];
 			while (cur) {
 				if (kot(cur->_data) == key) {
-					return cur;
+					return iterator(cur, this);
 				}
 				cur = cur->_next;
 			}
-			return nullptr;
+			return end();
 		}
 
 		bool Erase(const K& key) {
@@ -332,6 +361,7 @@ namespace hash_bucket {
 						prev->_next = cur->_next;
 					}
 
+					--_n;
 					delete cur;
 					return true;
 				}

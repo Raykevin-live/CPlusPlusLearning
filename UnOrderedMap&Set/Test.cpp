@@ -17,6 +17,7 @@ void test_My_Unordered_set1() {
 
 	lingze::unordered_set<int>::iterator it = us.begin();
 	while (it != us.end()) {
+		//*it += 2;
 		cout << *it << " ";
 		++it;
 	}
@@ -32,9 +33,19 @@ void test_My_Unordered_map1() {
 
 	for (auto& kv : dict)
 	{
+		//kv.first += 'X';
+		//kv.second += 'X';
 		cout << kv.first << ":" << kv.second << endl;
 	}
-
+	cout << endl;
+	dict["right"];
+	dict["sort"] = "paixu";
+	for (auto& kv : dict)
+	{
+		//kv.first += 'X';
+		//kv.second += 'X';
+		cout << kv.first << ":" << kv.second << endl;
+	}
 }
 int main()
 {
