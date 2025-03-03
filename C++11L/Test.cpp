@@ -374,8 +374,8 @@ void ff() {
 		cout << "delete: "<< p1 << endl;
 		throw;
 	}
+	cout << "delete: " << p1 << endl;
 	delete p1;
-	cout << "delete: " <<p1<< endl;
 }
 
 //指针指针的实现本质上是封装一个类去自动调用析构函数
@@ -429,12 +429,13 @@ public:
 	Aa(int a)
 		:_a(a)
 	{
-		cout << "Aa" << endl;
+		cout << "Aa-构造" << endl;
 	}
+	Aa() :_a(0) { cout << "Aa-无参构造" << endl; }
 
 	~Aa() {
 		cout << this;
-		cout << " ~Aa" << endl;
+		cout << " ~Aa-析构" << endl;
 	}
 //private:
 	int _a;
@@ -453,7 +454,7 @@ void test_smartPoint2(){
 	apt3->_a++;
 }
 
-void test_smart_ptr() {
+void test_smart_ptr1() {
 	/*lingze::unique_ptr<Aa> up1(new Aa(1));
 	lingze::unique_ptr<Aa> up2(new Aa(2));
 	//解决拷贝时出现悬空的情况
@@ -480,6 +481,224 @@ void test_smart_ptr() {
 	lsp1 = lsp1;
 	cout << lsp1->_a << endl;
 }
+
+struct Node {
+	Aa _val;
+	/*shared_ptr<Node> _next;
+	shared_ptr<Node> _prev;*/
+
+	//解决循环引用问题
+	/*weak_ptr<Node> _next;
+	weak_ptr<Node> _prev;*/
+
+	lingze::weak_ptr<Node> _next;
+	lingze::weak_ptr<Node> _prev;
+};
+
+void test_smart_ptr2() {
+	/*Node* n1 = new Node;
+	Node* n2 = new Node;
+
+	delete n1;
+	delete n2;*/
+
+	/*shared_ptr<Node> sp1(new Node);
+	shared_ptr<Node> sp2(new Node);*/
+	//智能指针是内置类型，sp1->_next 是自定义类型，所以类型不匹配需要修改
+	// 但是会出现循环引用问题需要使用weak_ptr
+
+	//weak_ptr 不是RAII机制
+	//解决的原理就是不增加引用计数，可以访问资源，不参与资源释放的管理
+	/*cout << sp1.use_count() << endl;
+	cout << sp2.use_count() << endl;
+	sp1->_next = sp2;
+	sp2->_prev = sp1;
+	cout << sp1.use_count() << endl;
+	cout << sp2.use_count() << endl;*/
+
+
+	lingze::shared_ptr<Node> msp1(new Node);
+	lingze::shared_ptr<Node> msp2(new Node);
+	cout << msp1.use_count() << endl;
+	cout << msp2.use_count() << endl;
+	msp1->_next = msp2;
+	msp2->_prev = msp1;
+	cout << msp1.use_count() << endl;
+	cout << msp2.use_count() << endl;
+}
+
+template<class T>
+struct DeleteArray {
+	void operator()(T* ptr) {
+		delete[]ptr;
+	}
+};
+
+void test_smart_ptr3() {
+	//需要传入删除器，是一个函数对象
+	lingze::shared_ptr<Aa> sp1(new Aa[10], DeleteArray<Aa>());
+	lingze::shared_ptr<Aa> sp2((Aa*)malloc(sizeof(Aa)), [](Aa* ptr) {free(ptr); });
+	lingze::shared_ptr<FILE> sp3(fopen("Test.cpp", "r"), [](FILE* ptr) {fclose(ptr); });
+
+	lingze::shared_ptr<Aa> sp4(new Aa);
+}
+
+
+//特殊类的设计
+
+//只在堆上创建对象的类
+class HeapOnly {
+public:
+	void Destroy() {
+		cout << "手动删除" << endl;
+		delete this;
+	}
+private:
+	//对象的生命周期在程序结束时自动结束，所以需要自动释放，但是类外的对象无法调用私有成员
+	//而动态申请的资源不会自动调用析构函数
+	~HeapOnly() {
+	}
+};
+
+class HeapOnly2 {
+public:
+	// 先有鸡还是先有蛋的问题，static静态机制，
+	// 直接让函数输入整个类，不用在乎对象
+	static HeapOnly2* CreatObj() {
+		return new HeapOnly2;
+	}
+private:
+	// 构造函数私有化
+	HeapOnly2() {
+	}
+	HeapOnly2(const HeapOnly2& hp) = delete;
+	HeapOnly2& operator=(const HeapOnly2& hp) = delete;
+};
+
+class StackOnly {
+public:
+	static StackOnly CreatObj() {
+		StackOnly st;
+		//构造+拷贝构造
+		return st;
+	}
+private:
+	// 构造函数私有化
+	StackOnly() {
+		//...
+	}
+	//对一个类实现专属的operator new
+	void* operator new(size_t size) = delete;
+};
+
+void test_heap_only() {
+	/*HeapOnly hp1;
+	HeapOnly hp2;*/
+	HeapOnly* hp3 = new HeapOnly;
+	hp3->Destroy();
+
+	//但是还要注意可以拷贝构造，会在栈上，要将他们也封起来
+	HeapOnly2* hp4 = HeapOnly2::CreatObj();
+	//HeapOnly2 hp5(*hp4);
+}
+
+void test_stack_only() {
+	StackOnly sp1 = StackOnly::CreatObj();
+	/*StackOnly sp2;
+	StackOnly sp3 = new StackOnly;*/
+	StackOnly copy(sp1);//拷贝构造，允许
+
+	//new operator new + 构造
+	//StackOnly* sp4 = new StackOnly(sp1);
+}
+
+
+
+//设计模式
+//一、单例模式
+// 单一对象
+//饿汉模式：就是说不管你将来用不用，程序启动时（main函数之前）就创建一个唯一的实例对象
+//1、如果单例对象初始化很多内容，可能会影响启动速度
+//2、如果两个单例类，互相有依赖关系
+//假设有A,B两个依赖类要求A先初始化，B再初始化，B的初始化创建依赖A，编译器无法保证
+namespace hungry {
+	class Singleton {
+	public:
+		// 2、获取唯一实例的接口
+		static Singleton& GetInstance() {
+			return _sinst;
+		}
+
+
+
+		// 3、删除拷贝构造函数和赋值操作符，防止复制
+		Singleton(const Singleton&) = delete;
+		Singleton& operator=(const Singleton&) = delete;
+	private:
+		// 1、私有构造函数，防止外部创建实例
+		Singleton() {}
+		// 示例数据成员
+		pair<string, string> _dict;
+		// 静态成员变量，存储唯一的实例
+		static Singleton _sinst; //这是允许的
+	};
+	// 静态成员变量的定义和初始化
+	Singleton Singleton::_sinst;
+}
+// 懒汉模式
+namespace lazy {
+	class Singleton {
+	public:
+		// 2、获取唯一实例的接口
+		static Singleton& GetInstance() {
+			if (_psinst == nullptr) {
+				//第一次调用GetInstance时再创建
+				_psinst = new Singleton;
+			}
+			return *_psinst;
+		}
+
+		//显示写析构函数，为了中途有时候可以手动删除重来
+		static void DelInstance() {
+			if (_psinst) {
+				delete _psinst;
+				_psinst = nullptr;
+			}
+		}
+
+		// 3、删除拷贝构造函数和赋值操作符，防止复制
+		Singleton(const Singleton&) = delete;
+		Singleton& operator=(const Singleton&) = delete;
+	private:
+		// 1、私有构造函数，防止外部创建实例
+		Singleton() {}
+
+		~Singleton() { cout << "~Singleton"; }
+
+		// 示例数据成员
+		pair<string, string> _dict;
+		// 静态成员变量，存储唯一的实例
+		static Singleton* _psinst; //这是允许的
+	};
+	// 静态成员变量的定义和初始化
+	// 只实例化指针，并不真的创建
+	Singleton* Singleton::_psinst = nullptr;
+}
+
+void test_Singleton() {
+	cout << &hungry::Singleton::GetInstance() << endl;
+	cout << &hungry::Singleton::GetInstance() << endl;
+	cout << &hungry::Singleton::GetInstance() << endl;
+	cout << endl;
+	cout << &lazy::Singleton::GetInstance() << endl;
+	cout << &lazy::Singleton::GetInstance() << endl;
+	cout << &lazy::Singleton::GetInstance() << endl;
+
+	//为了程序结束时可以自动析构，可以随便定义一个类的对象，在析构函数中使用DelInstance函数
+	//对象的生命周期定义到全局，在程序结束后自动析构
+	//也可以在本类中定义一个类，可以自动调用析构，带走单一对象
+}
+
 int main() {
 
 	//test_vec_Poi();
@@ -506,6 +725,11 @@ int main() {
 
 	//test_smartPoint2();
 
-	test_smart_ptr();
+	//test_smart_ptr3();
+	//test_heap_only();
+
+	//test_stack_only();
+
+	test_Singleton();
 	return 0;
 }

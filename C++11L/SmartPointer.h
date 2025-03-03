@@ -37,17 +37,26 @@ namespace lingze {
 	template<class T>
 	class shared_ptr {
 	public:
-		shared_ptr(T* ptr)
+		shared_ptr(T* ptr = nullptr)
 			:_ptr(ptr)
 			, _pcount(new int(1))
 		{
-			cout << "shared_ptr ";
+			cout << "shared_ptr " << endl;
+		}
+
+		template<class D>
+		shared_ptr(T* ptr, D del)
+			:_ptr(ptr)
+			, _pcount(new int(1))
+			,_del(del)
+		{
+			cout << "shared_ptr_del " << endl;
 		}
 
 		~shared_ptr() {
 			if (--(*_pcount) == 0) {
-				cout << "delete: ~shared:-> " << _ptr << endl;
-				delete _ptr;
+				cout << "~shared:-> " << _ptr << endl;
+				_del(_ptr);//函数包装器
 				delete _pcount;
 			}
 		}
@@ -83,6 +92,13 @@ namespace lingze {
 			return *this;
 		}
 
+		int use_count() const{
+			return *_pcount;
+		}
+
+		T* get() const{
+			return _ptr;
+		}
 	private:
 		T* _ptr;
 		//需要加入计数，当计数减为0时，才开始析构一次
@@ -91,5 +107,45 @@ namespace lingze {
 
 		//2. 需要使用int* 每个资源指向一个指针，一个计数
 		int* _pcount;
+
+		function<void(T*)> _del = [](T* ptr) {delete ptr; };//函数包装器实现
+
+		//法1：由于weak_ptr 拿不到内置的_ptr，可以设置友元类
+		//法2：也可以设置类函数返回成员数据
+		/*template<class T>
+		friend class weak_ptr;*/
+	};
+
+	template<class T>
+	class weak_ptr {
+	public:
+		weak_ptr(T* ptr = nullptr)
+			:_ptr(ptr)
+		{
+			cout << "weak_ptr "<<endl;
+		}
+		weak_ptr(const shared_ptr<T>& sp) 
+			:_ptr(sp.get())
+		{}
+		weak_ptr<T>& operator=(const shared_ptr<T>& sp) {
+			_ptr = sp.get();
+
+			return *this;
+		}
+		
+		T& operator*() {
+			return *_ptr;
+		}
+		T* operator->() {
+			return _ptr;
+		}
+
+		//这里不需要析构，因为会在shared_ptr 中自动析构
+		/*~weak_ptr() {
+			cout << "~weak_ptr()" << endl;
+			delete _ptr;
+		}*/
+	private:
+		T* _ptr;
 	};
 }
